@@ -6,4 +6,4 @@ Jinja2==2.11.3
 markupsafe==2.0.1
 slackeventsapi==2.1.0
 slackclient==2.5.0
-Werkzeug==1.0.0
+Werkzeug==2.2.3
