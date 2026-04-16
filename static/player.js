@@ -30,12 +30,14 @@ window.addEventListener('load', () => {
     },
   };
 
-  const srcUrl = new URL(window.location.href);
-  srcUrl.pathname = '/live/movie.m3u8';
+  // Same-origin HLS URL — SWAG on the current host proxies /live/* to the
+  // local nginx-rtmp container. Works for any hostname the page is served
+  // from (heckle.tom.kiwi, stream.tom.kiwi, etc.) without rebuilding.
+  const srcUrl = new URL('/live/movie.m3u8', window.location.origin);
 
   videojs(document.querySelector('#video'), options, function() {
     this.src({
-      src: 'https://stream-remote.tom.kiwi/live/movie.m3u8',
+      src: srcUrl.href,
       type: 'application/x-mpegURL',
     });
     this.qualityLevels();
