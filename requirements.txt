@@ -1,9 +1,3 @@
-Flask==1.1.1
-Flask-Gunicorn==0.1.1
-gunicorn==20.0.4
-itsdangerous==2.0.1
-Jinja2==2.11.3
-markupsafe==2.0.1
-slackeventsapi==2.1.0
-slackclient==2.5.0
-Werkzeug==1.0.0
+Flask>=3.0,<4
+gunicorn>=23,<24
+slack_sdk>=3.27,<4

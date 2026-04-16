@@ -6,8 +6,8 @@ import threading
 import time
 
 import flask
-import slack
-import slackeventsapi
+from slack_sdk import WebClient
+from slack_sdk.signature import SignatureVerifier
 
 
 # Tokens belonging to the bot
@@ -17,19 +17,34 @@ SLACK_SIGNING_SECRET = os.environ['SLACK_SIGNING_SECRET']
 ENABLE_BOT_RELAY = bool(os.environ.get('ENABLE_BOT_RELAY', False))
 
 app = flask.Flask(__name__)
-slack_client = slack.WebClient(token=SLACK_BOT_TOKEN)
+slack_client = WebClient(token=SLACK_BOT_TOKEN)
+signature_verifier = SignatureVerifier(SLACK_SIGNING_SECRET)
+
+
+def paginated(method, **kwargs):
+    """Iterate through all pages of a Slack Web API cursor-paginated method."""
+    cursor = None
+    while True:
+        call_kwargs = dict(kwargs)
+        if cursor:
+            call_kwargs['cursor'] = cursor
+        response = method(**call_kwargs)
+        yield response
+        cursor = (response.get('response_metadata') or {}).get('next_cursor')
+        if not cursor:
+            return
 
 
 # Make sure we are joined to the main channel
 HECKLE_CHANNEL_NAME = 'heckle'
 HECKLE_CHANNEL = None
-for page in slack_client.conversations_list(types='public_channel'):
+for page in paginated(slack_client.conversations_list, types='public_channel'):
     for channel in page['channels']:
         if channel['name'] == HECKLE_CHANNEL_NAME:
             HECKLE_CHANNEL = channel['id']
             if not channel['is_member']:
                 slack_client.conversations_join(channel=HECKLE_CHANNEL)
-                break
+            break
 
     if HECKLE_CHANNEL:
         break
@@ -37,7 +52,7 @@ for page in slack_client.conversations_list(types='public_channel'):
 
 # Build user list so we have usernames
 user_names_by_id = {}
-for page in slack_client.users_list():
+for page in paginated(slack_client.users_list):
     for member in page['members']:
         user_names_by_id[member['id']] = member['profile'].get('display_name', None) \
             or member['profile']['real_name']
@@ -45,7 +60,7 @@ for page in slack_client.users_list():
 
 # Build emoji list
 emojis_by_name = {}
-for page in slack_client.emoji_list():
+for page in paginated(slack_client.emoji_list):
     for name, url in page['emoji'].items():
         if url.startswith('alias:'):
             continue
@@ -80,9 +95,6 @@ SUCCESS_RESPONSES = [
     'You make heckling look easy!',
     'You funny mother fucker.',
 ]
-
-
-slack_events_adapter = slackeventsapi.SlackEventAdapter(SLACK_SIGNING_SECRET, '/slack-actions', app)
 
 
 def heckle(user_id, text, user_name=None):
@@ -205,7 +217,6 @@ USER_PATTERN = re.compile(r'<@([^>]*)>')
 CHANNEL_PATTERN = re.compile(r'<#[^>|]*\|?([^>]*)>')
 
 
-@slack_events_adapter.on('message')
 def channel_message(data):
     with event_lock:
         if data['event_id'] in handled_events:
@@ -243,11 +254,37 @@ def channel_message(data):
         )
 
 
+@app.route('/slack-actions', methods=['POST'])
+def slack_actions():
+    """Webhook endpoint for Slack Events API.
+
+    Replaces the old `slackeventsapi.SlackEventAdapter` middleware (archived,
+    incompatible with Flask 3). Verifies the request signature, handles the
+    initial URL-verification handshake, and dispatches `message` events to
+    `channel_message`.
+    """
+    raw_body = flask.request.get_data()
+    if not signature_verifier.is_valid_request(raw_body, dict(flask.request.headers)):
+        flask.abort(403)
+
+    payload = flask.request.get_json(silent=True) or {}
+
+    # One-time handshake when Slack validates the endpoint URL.
+    if payload.get('type') == 'url_verification':
+        return flask.jsonify({'challenge': payload.get('challenge', '')})
+
+    if payload.get('type') == 'event_callback':
+        event = payload.get('event') or {}
+        if event.get('type') == 'message':
+            channel_message(payload)
+
+    # Slack expects any 2xx response; empty body is fine.
+    return '', 200
+
+
 if __name__ == '__main__':
     # Note that we use debug mode to get helpful errors, and so we can serve static content
     # directly from Flask. This app is realllly low stakes, so not concerned about it.
-    # TODO(tomnz): Look into serving static stuff with WhiteNoise?
-    # http://whitenoise.evans.io/en/stable/flask.html
     app.debug = True
 
     app.run(
