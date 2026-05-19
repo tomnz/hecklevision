@@ -170,4 +170,5 @@ Note that animation duration should match MESSAGE_SHOW_MS in main.js.
   position: fixed;
   z-index: -1;
   font-size: 30px;
+  will-change: transform, opacity;
 }

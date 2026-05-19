@@ -28,13 +28,16 @@ const replaceEmoji = (str) => {
     return str;
   }
 
+  // Pick one animation style for the entire message
+  const animation = animations[Math.floor(Math.random() * animations.length)];
+
   emojis.forEach((emoji) => {
     // Strip :s
     const emojiName = emoji.slice(1, emoji.length-1);
     const html = emojiHTML(emojiName)
     str = str.replace(emoji, html);
     if (!emojiName.startsWith('skin-tone-') && !suppressAnimations) {
-      animateEmoji(html);
+      animateEmoji(html, animation);
     }
   });
 

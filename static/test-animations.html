@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Animation Test</title>
+  <style>
+    html, body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .animatedEmoji {
+      padding: 0;
+      margin: 0;
+      position: fixed;
+      z-index: 10;
+      font-size: 30px;
+      will-change: transform, opacity;
+    }
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: #333;
+      color: #fff;
+    }
+    button:hover { background: #555; }
+  </style>
+</head>
+<body>
+  <div id="animatedEmojis"></div>
+  <div id="controls">
+    <button onclick="testOne(0)">Bounce</button>
+    <button onclick="testOne(1)">Bubble</button>
+    <button onclick="testOne(2)">Spiral</button>
+    <button onclick="testOne(3)">Rain</button>
+    <button onclick="testMessage()">Random Message</button>
+  </div>
+
+  <script src="messagesAnimate.js"></script>
+  <script>
+    const allEmojis = [
+      '&#x1F603;', '&#x1F525;', '&#x2B50;', '&#x1F389;',
+      '&#x1F680;', '&#x1F308;', '&#x1F60D;', '&#x1F44D;',
+      '&#x1F4A5;', '&#x1F381;', '&#x1F383;', '&#x1F47B;',
+    ];
+
+    function testOne(index) {
+      const html = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+      animateEmoji(html, animations[index]);
+    }
+
+    function testMessage() {
+      const count = 2 + Math.floor(Math.random() * 14);
+      const animation = animations[Math.floor(Math.random() * animations.length)];
+      for (let i = 0; i < count; i++) {
+        const html = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+        animateEmoji(html, animation);
+      }
+    }
+  </script>
+</body>
+</html>
