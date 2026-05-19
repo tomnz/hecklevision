@@ -5105,14 +5105,6 @@ ChromecastTech = {
     * @see {@link http://docs.videojs.com/Player.html#volume}
     */
    setVolume: function(volumeLevel) {
-      if (!this._hasPlayedAnyItem) {
-         // During initial tech setup, Video.js syncs its cached volume (typically
-         // 1.0) to the new tech. Skip the write so the receiver keeps its current
-         // volume. Trigger volumechange so the UI reads back the receiver's actual
-         // level instead.
-         this._triggerVolumeChangeEvent();
-         return;
-      }
       this._remotePlayer.volumeLevel = volumeLevel;
       this._remotePlayerController.setVolumeLevel();
       // This event is triggered by the listener on
