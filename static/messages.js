@@ -33,7 +33,7 @@ const replaceEmoji = (str) => {
     const emojiName = emoji.slice(1, emoji.length-1);
     const html = emojiHTML(emojiName)
     str = str.replace(emoji, html);
-    if (!emojiName.startsWith('skin-tone-')) {
+    if (!emojiName.startsWith('skin-tone-') && !suppressAnimations) {
       animateEmoji(html);
     }
   });
@@ -64,6 +64,7 @@ const stringToColor = (str) => {
 
 const historyMode = new URLSearchParams(window.location.search).has('history');
 let lastTimestamp = historyMode ? 0 : new Date().getTime() / 1000;
+let suppressAnimations = historyMode;
 
 const newSpinnerEl = () => {
   const spinnerEl = document.createElement('div');
@@ -155,6 +156,7 @@ const updateMessages = () => {
       }
     });
   }).finally(() => {
+    suppressAnimations = false;
     checkMessageOverload();
     // Schedule the next update
     setTimeout(updateMessages, MESSAGE_POLL_MS);
