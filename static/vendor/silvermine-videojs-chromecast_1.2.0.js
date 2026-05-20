@@ -4984,6 +4984,12 @@ ChromecastTech = {
          mediaInfo.customData = customData;
       }
 
+      // If the source looks like a live HLS stream, tell the Cast receiver to
+      // start at the live edge instead of the beginning of the playlist.
+      if (source.type === 'application/x-mpegURL' || (source.src && source.src.indexOf('.m3u8') !== -1)) {
+         mediaInfo.streamType = chrome.cast.media.StreamType.LIVE;
+      }
+
       this._ui.updateTitle(title);
       this._ui.updateSubtitle(subtitle);
 
