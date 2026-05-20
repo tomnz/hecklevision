@@ -4864,6 +4864,9 @@ ChromecastTech = {
       this._listenToPlayerControllerEvents();
       this.on('dispose', this._removeAllEventListeners.bind(this));
 
+      // Capture the receiver's current volume before Video.js or loadMedia
+      // overwrites it. Restored in _playSource's success callback.
+      this._savedReceiverVolume = this._remotePlayer.volumeLevel;
       this._hasPlayedAnyItem = false;
       this._requestTitle = options.requestTitleFn || _.noop;
       this._requestSubtitle = options.requestSubtitleFn || _.noop;
@@ -5012,6 +5015,14 @@ ChromecastTech = {
             this.trigger('playing');
             this._hasPlayedAnyItem = true;
             this._isMediaLoading = false;
+            // Restore the receiver's pre-connect volume and clear the guard
+            // so subsequent setVolume calls from the UI work normally.
+            if (this._savedReceiverVolume !== undefined) {
+               this._remotePlayer.volumeLevel = this._savedReceiverVolume;
+               this._remotePlayerController.setVolumeLevel();
+               delete this._savedReceiverVolume;
+               this._triggerVolumeChangeEvent();
+            }
          }.bind(this), this._triggerErrorEvent.bind(this));
    },
 
@@ -5111,6 +5122,13 @@ ChromecastTech = {
     * @see {@link http://docs.videojs.com/Player.html#volume}
     */
    setVolume: function(volumeLevel) {
+      if (this._savedReceiverVolume !== undefined) {
+         // During init, Video.js syncs its cached volume (1.0) to the new tech.
+         // Block it so we don't blast the receiver. The saved volume is restored
+         // in _playSource's loadMedia success callback.
+         this._triggerVolumeChangeEvent();
+         return;
+      }
       this._remotePlayer.volumeLevel = volumeLevel;
       this._remotePlayerController.setVolumeLevel();
       // This event is triggered by the listener on
