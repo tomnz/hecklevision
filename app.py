@@ -35,36 +35,56 @@ def paginated(method, **kwargs):
             return
 
 
-# Make sure we are joined to the main channel
+def slack_startup(max_retries=5):
+    """Run Slack API calls needed at boot. Retries with backoff on failure."""
+    global HECKLE_CHANNEL, user_names_by_id, emojis_by_name
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Find and join the heckle channel
+            HECKLE_CHANNEL = None
+            for page in paginated(slack_client.conversations_list, types='public_channel'):
+                for channel in page['channels']:
+                    if channel['name'] == HECKLE_CHANNEL_NAME:
+                        HECKLE_CHANNEL = channel['id']
+                        if not channel['is_member']:
+                            slack_client.conversations_join(channel=HECKLE_CHANNEL)
+                        break
+                if HECKLE_CHANNEL:
+                    break
+
+            # Build user list so we have usernames
+            user_names_by_id = {}
+            for page in paginated(slack_client.users_list):
+                for member in page['members']:
+                    user_names_by_id[member['id']] = member['profile'].get('display_name', None) \
+                        or member['profile']['real_name']
+
+            # Build emoji list
+            emojis_by_name = {}
+            for page in paginated(slack_client.emoji_list):
+                for name, url in page['emoji'].items():
+                    if url.startswith('alias:'):
+                        continue
+                    emojis_by_name[name] = url
+
+            print(f'[startup] Slack API ready (attempt {attempt}): '
+                  f'{len(user_names_by_id)} users, {len(emojis_by_name)} emoji')
+            return
+        except Exception as e:
+            delay = min(2 ** attempt, 30)
+            print(f'[startup] Slack API failed (attempt {attempt}/{max_retries}): {e}')
+            if attempt == max_retries:
+                raise
+            print(f'[startup] Retrying in {delay}s...')
+            time.sleep(delay)
+
+
 HECKLE_CHANNEL_NAME = 'heckle'
 HECKLE_CHANNEL = None
-for page in paginated(slack_client.conversations_list, types='public_channel'):
-    for channel in page['channels']:
-        if channel['name'] == HECKLE_CHANNEL_NAME:
-            HECKLE_CHANNEL = channel['id']
-            if not channel['is_member']:
-                slack_client.conversations_join(channel=HECKLE_CHANNEL)
-            break
-
-    if HECKLE_CHANNEL:
-        break
-
-
-# Build user list so we have usernames
 user_names_by_id = {}
-for page in paginated(slack_client.users_list):
-    for member in page['members']:
-        user_names_by_id[member['id']] = member['profile'].get('display_name', None) \
-            or member['profile']['real_name']
-
-
-# Build emoji list
 emojis_by_name = {}
-for page in paginated(slack_client.emoji_list):
-    for name, url in page['emoji'].items():
-        if url.startswith('alias:'):
-            continue
-        emojis_by_name[name] = url
+slack_startup()
 
 
 MESSAGE_HISTORY = 100
