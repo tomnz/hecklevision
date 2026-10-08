@@ -5050,9 +5050,11 @@ module.exports = function (videojs) {
       _this._remotePlayerController = _this._chromecastSessionManager.getRemotePlayerController();
       _this._listenToPlayerControllerEvents();
       _this.on('dispose', _this._removeAllEventListeners.bind(_assertThisInitialized(_this)));
-      // Capture the receiver's current volume before Video.js or loadMedia
-      // overwrites it. Restored in _playSource's success callback.
-      _this._savedReceiverVolume = _this._remotePlayer.volumeLevel;
+      // Keep whatever volume and mute state the receiver (TV) already has. While this
+      // flag is set, setVolume/setMuted only refresh the UI from the receiver instead of
+      // writing to it. Cleared in _playSource's success callback once Video.js has
+      // finished pushing its own cached volume to the new tech.
+      _this._preserveReceiverVolume = true;
       _this._hasPlayedAnyItem = false;
       _this._requestTitle = options.requestTitleFn || function () {/* noop */};
       _this._requestSubtitle = options.requestSubtitleFn || function () {/* noop */};
@@ -5218,13 +5220,17 @@ module.exports = function (videojs) {
           this.trigger('playing');
           this._hasPlayedAnyItem = true;
           this._isMediaLoading = false;
-          // Restore the receiver's pre-connect volume and clear the guard
-          // so subsequent setVolume calls from the UI work normally.
-          if (this._savedReceiverVolume !== undefined) {
-            this._remotePlayer.volumeLevel = this._savedReceiverVolume;
-            this._remotePlayerController.setVolumeLevel();
-            delete this._savedReceiverVolume;
-            this._triggerVolumeChangeEvent();
+          // triggerReady runs Video.js's ready callbacks (including
+          // Player#handleTechReady_, which calls setVolume with the local player's
+          // cached volume) on a timeout. Queue the guard release behind them so
+          // that call is still swallowed, then sync the UI from the receiver.
+          if (this._preserveReceiverVolume) {
+            this.ready(function () {
+              this.setTimeout(function () {
+                delete this._preserveReceiverVolume;
+                this._triggerVolumeChangeEvent();
+              }, 0);
+            }.bind(this));
           }
           this._getMediaSession().addUpdateListener(this._onMediaSessionStatusChanged.bind(this));
         }.bind(this), this._triggerErrorEvent.bind(this));
@@ -5341,10 +5347,9 @@ module.exports = function (videojs) {
     }, {
       key: "setVolume",
       value: function setVolume(volumeLevel) {
-        if (this._savedReceiverVolume !== undefined) {
-          // During init, Video.js syncs its cached volume (1.0) to the new tech.
-          // Block it so we don't blast the receiver. The saved volume is restored
-          // in _playSource's loadMedia success callback.
+        if (this._preserveReceiverVolume) {
+          // During init, Video.js syncs its cached volume (often 1.0) to the new tech.
+          // Ignore it so the receiver keeps its own volume.
           this._triggerVolumeChangeEvent();
           return;
         }
@@ -5381,6 +5386,11 @@ module.exports = function (videojs) {
     }, {
       key: "setMuted",
       value: function setMuted(isMuted) {
+        if (this._preserveReceiverVolume) {
+          // Same as setVolume: don't let the local player's mute state override the receiver's
+          this._triggerVolumeChangeEvent();
+          return;
+        }
         if (this._remotePlayer.isMuted && !isMuted || !this._remotePlayer.isMuted && isMuted) {
           this._remotePlayerController.muteOrUnmute();
         }

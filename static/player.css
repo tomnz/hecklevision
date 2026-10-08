@@ -105,3 +105,10 @@ body {
     aspect-ratio: 16 / 9;
   }
 }
+
+/* The Chromecast plugin hides its button until Chrome's background discovery reports a
+   device, which can miss TVs the browser's own Cast menu finds. The button only exists
+   when the Cast API loaded, and clicking it opens the same device picker, so keep it. */
+.video-js .vjs-chromecast-button.vjs-hidden {
+  display: block !important;
+}
