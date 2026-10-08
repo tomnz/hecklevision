@@ -11,7 +11,7 @@ class Animation {
   constructor(stepFactory, options = {}) {
     this.stepFactory = stepFactory; // (el) => (elapsed) => boolean
     this.spawnSpread = options.spawnSpread ?? 2.0;
-    this.count = options.count ?? 6;
+    this.count = options.count ?? 8;
   }
 }
 
@@ -44,21 +44,21 @@ const h = () => window.innerHeight;
 
 // --- Bounce ------------------------------------------------------------------
 
-const BOUNCE_GRAVITY = 22.0;
+const BOUNCE_GRAVITY = 17.0;
 const BOUNCE_REBOUND = 0.9;
 const BOUNCE_DAMP = 0.02;
 const BOUNCE_SIZE_MIN = 60;
 const BOUNCE_SIZE_VAR = 20;
-const BOUNCE_VEL_X_MIN = 8.0;
-const BOUNCE_VEL_X_VAR = 10.0;
-const BOUNCE_VEL_Y_MIN = -40.0;
+const BOUNCE_VEL_X_MIN = 6.0;
+const BOUNCE_VEL_X_VAR = 8.0;
+const BOUNCE_VEL_Y_MIN = -35.0;
 const BOUNCE_VEL_Y_VAR = 20.0;
 const BOUNCE_X = -8.0;
 const BOUNCE_X_VAR = 6.0;
 const BOUNCE_Y = 50.0;
 const BOUNCE_FADE = 1.0;
-const BOUNCE_LIFETIME_MIN = 7.0;
-const BOUNCE_LIFETIME_VAR = 3.0;
+const BOUNCE_LIFETIME_MIN = 9.0;
+const BOUNCE_LIFETIME_VAR = 4.0;
 
 const animateBounce = (el) => {
   let x = BOUNCE_X + Math.random() * BOUNCE_X_VAR;
@@ -105,8 +105,8 @@ const animateBounce = (el) => {
 
 // --- Bubble ------------------------------------------------------------------
 
-const BUBBLE_BUOY_MIN = 4.0;
-const BUBBLE_BUOY_VAR = 8.0;
+const BUBBLE_BUOY_MIN = 3.0;
+const BUBBLE_BUOY_VAR = 6.0;
 const BUBBLE_BROWNIAN = 0.2;
 const BUBBLE_SIZE = 80;
 const BUBBLE_PULSE_MIN = 0.85;
@@ -118,8 +118,8 @@ const BUBBLE_Y_VAR = 15.0;
 const BUBBLE_GROW = 0.5;
 const BUBBLE_BURST_SCALE = 0.1;
 const BUBBLE_BURST_DURATION = 0.15;
-const BUBBLE_LIFETIME_MIN = 7.0;
-const BUBBLE_LIFETIME_VAR = 4.0;
+const BUBBLE_LIFETIME_MIN = 9.0;
+const BUBBLE_LIFETIME_VAR = 5.0;
 
 const animateBubble = (el) => {
   let x = Math.random() * 90;
@@ -187,11 +187,11 @@ const SPIRAL_RADIUS_VAR = 10.0;
 const SPIRAL_SPEED_MIN = 0.8;
 const SPIRAL_SPEED_VAR = 1.8;
 const SPIRAL_SIZE = 70;
-const SPIRAL_CONVERGE_MIN = 0.25;
-const SPIRAL_CONVERGE_VAR = 0.3;
+const SPIRAL_CONVERGE_MIN = 0.34;
+const SPIRAL_CONVERGE_VAR = 0.29;
 const SPIRAL_POP_RADIUS = 3.0;
 const SPIRAL_POP_SCALE = 1.8;
-const SPIRAL_POP_FADE = 1.2;
+const SPIRAL_POP_FADE = 1.5;
 const SPIRAL_POP_SPEED_MIN = 15;
 const SPIRAL_POP_SPEED_VAR = 10;
 
@@ -248,8 +248,8 @@ const animateSpiral = (el) => {
 
 // --- Rain/confetti -----------------------------------------------------------
 
-const RAIN_VEL_Y_MIN = 15.0;
-const RAIN_VEL_Y_VAR = 25.0;
+const RAIN_VEL_Y_MIN = 11.5;
+const RAIN_VEL_Y_VAR = 19.0;
 const RAIN_SWAY_AMP = 3.0;
 const RAIN_SWAY_FREQ_MIN = 1.5;
 const RAIN_SWAY_FREQ_VAR = 2.0;
@@ -258,8 +258,8 @@ const RAIN_ROT_SPEED_VAR = 180;
 const RAIN_SIZE_MIN = 50;
 const RAIN_SIZE_VAR = 40;
 const RAIN_SPLAT = 0.3;
-const RAIN_AFTER_SPLAT_LINGER = 1.0;
-const RAIN_AFTER_SPLAT_FADE = 1.0;
+const RAIN_AFTER_SPLAT_LINGER = 1.3;
+const RAIN_AFTER_SPLAT_FADE = 1.3;
 
 const animateRain = (el) => {
   const x = Math.random() * 95;
@@ -315,10 +315,10 @@ const animateRain = (el) => {
 // --- Animation definitions ---------------------------------------------------
 
 const animations = [
-  new Animation(animateBounce, { spawnSpread: 0.3 }),
-  new Animation(animateBubble, { spawnSpread: 1.5 }),
-  new Animation(animateSpiral, { spawnSpread: 0.6 }),
-  new Animation(animateRain,   { spawnSpread: 1.5 }),
+  new Animation(animateBounce, { spawnSpread: 0.4 }),
+  new Animation(animateBubble, { spawnSpread: 2.0 }),
+  new Animation(animateSpiral, { spawnSpread: 0.8 }),
+  new Animation(animateRain,   { spawnSpread: 2.0 }),
 ];
 
 // --- Emoji spawner -----------------------------------------------------------

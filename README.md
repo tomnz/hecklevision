@@ -8,27 +8,49 @@ Message state is in-process memory only — no persistence. Restarts wipe histor
 
 In production the app is served through a front-door RTMP + reverse-proxy server (see [hecklevision-server](https://github.com/tomnz/hecklevision-server)) which stitches HLS live streaming onto the same origin.
 
-## Setup
+## Running locally
 
-You'll need to [create a Slack app / bot user](https://api.slack.com/apps) for your workspace and set the bot user OAuth token (`SLACK_BOT_TOKEN`) and signing secret (`SLACK_SIGNING_SECRET`) as environment variables before running.
+No Slack credentials are needed to try things out. Without `SLACK_BOT_TOKEN` / `SLACK_SIGNING_SECRET` the app starts in local mode: Slack endpoints return 503 and there are no custom emoji, but everything else works.
 
 ```sh
-# Python 3.12 (matches runtime.txt; 3.11 / 3.13 likely work too)
-pip install -r requirements.txt
-
-SLACK_BOT_TOKEN=xoxb-... \
-SLACK_SIGNING_SECRET=... \
-python app.py
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python app.py
 ```
 
-Server comes up on [localhost:7000](http://localhost:7000). Set `ENABLE_BOT_RELAY=1` if you want `/post` and `/submit` to also post back into the Slack `#heckle` channel.
+Then open, side by side:
 
-Simulate a slash-command submission with a manual POST:
+* [localhost:7000/submit](http://localhost:7000/submit) — send messages (emoji autocomplete + live preview)
+* [localhost:7000/messages](http://localhost:7000/messages) — the overlay, with emoji animations
+* [localhost:7000/messages?history](http://localhost:7000/messages?history) — full history, no animations
+* [localhost:7000/static/test-animations.html](http://localhost:7000/static/test-animations.html) — fire each animation style on demand
+
+Flask runs with `debug=True`, so edits to templates and static files show up on refresh.
+
+To run against Slack, you'll need to [create a Slack app / bot user](https://api.slack.com/apps) for your workspace and set the bot user OAuth token (`SLACK_BOT_TOKEN`) and signing secret (`SLACK_SIGNING_SECRET`):
+
+```sh
+SLACK_BOT_TOKEN=xoxb-... \
+SLACK_SIGNING_SECRET=... \
+.venv/bin/python app.py
+```
+
+Set `ENABLE_BOT_RELAY=1` if you want `/post` and `/submit` to also post back into the Slack `#heckle` channel.
+
+Simulate a submission with a manual POST:
 
 ```sh
 curl --data-urlencode 'user_name=tom' \
      --data-urlencode 'text=His face looks like grilled cheese!' \
      http://localhost:7000/submit
+```
+
+## Tests
+
+Message rendering, emoji parsing and autocomplete live in `static/heckleText.js`, which has no DOM dependencies and is unit tested with Node's built-in runner (Node 20+, no `npm install` needed):
+
+```sh
+node --test
 ```
 
 ## Endpoints
@@ -45,12 +67,15 @@ curl --data-urlencode 'user_name=tom' \
 
 ## Development
 
+* `static/heckleText.js` — shared text rendering (emoji, escaping, autocomplete search); unit tested in `tests/`
 * `static/messages.js` — polling + rendering loop for the overlay
+* `static/messagesAnimate.js` — emoji animation engine
+* `static/submit.js` — submit page (emoji autocomplete, preview)
 * `static/player.js` — video.js init for the live HLS stream (same-origin `/live/*.m3u8`)
 * `static/*.css` — styling
 * `templates/*.html` — page skeletons
 * `app.py` — Flask backend. Run with `debug=True` locally so Flask serves static assets and hot-reloads on save. Stakes are low.
-* `Procfile` / `runtime.txt` / `requirements.txt` — Heroku config
+* `Procfile` / `.python-version` / `requirements.txt` — Heroku config
 
 ## Deployment
 

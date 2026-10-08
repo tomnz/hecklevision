@@ -1,27 +1,57 @@
 <!doctype html>
+<html lang="en">
 <head>
-    <title>Hecklevision!</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hecklevision! — Submit a heckle</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='reset.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='submit.css') }}" />
 </head>
 <body>
-    <div id="container">
-        <form method="post">
+    <main id="container">
+        <header>
+            <h1>Hecklevision</h1>
+            <p class="intro">
+                Send a message to the screen. Type <kbd>:</kbd> followed by a name to search for emoji.
+            </p>
+        </header>
+
+        <form id="heckleForm" autocomplete="off">
+            <label class="field">
+                <span class="label">Your name</span>
+                <input type="text" name="user_name" id="userName" maxlength="40" placeholder="e.g. Tom" />
+            </label>
+
             <div class="field">
-                <p>Name</p>
-                <p><input aria-label="Name" type="text" name="user_name" id="userName" /></p>
+                <label for="text" class="label">Message</label>
+                <div class="inputWrapper">
+                    <input type="text" name="text" id="text" placeholder="Wow, this movie sucks :thumbsdown:"
+                           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="emojiPopup" />
+                    <ul id="emojiPopup" role="listbox" hidden></ul>
+                </div>
+                <div class="hint">
+                    <span id="charCount" aria-live="polite"></span>
+                </div>
             </div>
+
             <div class="field">
-                <p>Message</p>
-                <p><input aria-label="Message" type="Text" name="text" id="text" /></p>
+                <span class="label">Preview</span>
+                <div id="preview" class="preview empty"></div>
             </div>
-            <div class="field">
-                <p><button type="button" id="submit">Submit</button></p>
-            </div>
-            <div class="field">
-                <p id="response"></p>
+
+            <div class="actions">
+                <button type="submit" id="submit">Heckle!</button>
+                <p id="response" role="status"></p>
             </div>
         </form>
-    </div>
+
+        <footer>
+            <a href="/">Watch the stream</a> · <a href="/messages?history">Heckle history</a>
+        </footer>
+    </main>
+    <script type="text/javascript" src="{{ url_for('static', filename='builtinEmojis.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='heckleText.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='submit.js') }}"></script>
 </body>
+</html>

@@ -1,4 +1,5 @@
 import collections
+import html
 import os
 import random
 import re
@@ -10,15 +11,20 @@ from slack_sdk import WebClient
 from slack_sdk.signature import SignatureVerifier
 
 
-# Tokens belonging to the bot
-SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
-SLACK_SIGNING_SECRET = os.environ['SLACK_SIGNING_SECRET']
+# Tokens belonging to the bot. Without them the app runs in local mode: no Slack
+# integration, but /submit, /messages and /get all work for testing rendering.
+SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
+SLACK_SIGNING_SECRET = os.environ.get('SLACK_SIGNING_SECRET')
+SLACK_ENABLED = bool(SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET)
 
-ENABLE_BOT_RELAY = bool(os.environ.get('ENABLE_BOT_RELAY', False))
+ENABLE_BOT_RELAY = SLACK_ENABLED and bool(os.environ.get('ENABLE_BOT_RELAY', False))
 
 app = flask.Flask(__name__)
-slack_client = WebClient(token=SLACK_BOT_TOKEN)
-signature_verifier = SignatureVerifier(SLACK_SIGNING_SECRET)
+if SLACK_ENABLED:
+    slack_client = WebClient(token=SLACK_BOT_TOKEN)
+    signature_verifier = SignatureVerifier(SLACK_SIGNING_SECRET)
+else:
+    print('[Local mode] SLACK_BOT_TOKEN / SLACK_SIGNING_SECRET not set; Slack integration disabled')
 
 
 def paginated(method, **kwargs):
@@ -84,7 +90,8 @@ HECKLE_CHANNEL_NAME = 'heckle'
 HECKLE_CHANNEL = None
 user_names_by_id = {}
 emojis_by_name = {}
-slack_startup()
+if SLACK_ENABLED:
+    slack_startup()
 
 
 MESSAGE_HISTORY = 100
@@ -103,8 +110,9 @@ class Message(object):
 USER_SILENCE_SECS = 0.3
 user_last_posted = collections.defaultdict(lambda: 0.0)
 
-# Limit user message length
+# Limit user message length. Mirrored in static/heckleText.js.
 MESSAGE_LENGTH_LIMIT = 200
+EMOJI_PATTERN = re.compile(r":[a-z0-9_+'.-]+:", re.IGNORECASE)
 
 
 SUCCESS_RESPONSES = [
@@ -126,7 +134,7 @@ def heckle(user_id, text, user_name=None):
                       'you want to heckle with!'
 
     # Kind of arbitrary, but count emojis as four characters only
-    text_len = len(re.sub(r':[^:]*:', 'xxxx', text))
+    text_len = len(EMOJI_PATTERN.sub('xxxx', text))
     if text_len > MESSAGE_LENGTH_LIMIT:
         return False, 'Keep your rants to yourself. No more than {} characters please.'.format(MESSAGE_LENGTH_LIMIT)
 
@@ -158,6 +166,8 @@ def heckle(user_id, text, user_name=None):
 
 @app.route('/post', methods=['POST'])
 def post_view():
+    if not SLACK_ENABLED:
+        flask.abort(503)
     data = flask.request.form
     user_id = data['user_id']
     text = data.get('text', None)
@@ -206,17 +216,20 @@ def player_view():
 def submit_view():
     if flask.request.method == 'POST':
         data = flask.request.form
-        user_name = data['user_name']
-        text = data['text']
-        _, response = heckle(None, text, user_name)
+        user_name = data.get('user_name', '').strip()
+        text = data.get('text', '').strip()
+        if not user_name:
+            return flask.jsonify({'ok': False, 'text': 'You need to give me a name!'})
+        success, response = heckle(None, text, user_name)
 
-        if ENABLE_BOT_RELAY:
+        if success and ENABLE_BOT_RELAY:
             slack_client.chat_postMessage(
                 channel=HECKLE_CHANNEL,
                 text='*{}*: {}'.format(user_name, text),
             )
 
         return flask.jsonify({
+            'ok': success,
             'text': response,
         })
 
@@ -235,6 +248,20 @@ event_lock = threading.Lock()
 
 USER_PATTERN = re.compile(r'<@([^>]*)>')
 CHANNEL_PATTERN = re.compile(r'<#[^>|]*\|?([^>]*)>')
+# Slack wraps links as <https://example.com> or <https://example.com|label>
+LINK_PATTERN = re.compile(r'<((?:https?|mailto):[^>|]*)(?:\|([^>]*))?>')
+
+
+def slack_to_plain_text(text):
+    """Convert Slack's message markup into the plain text that was typed."""
+    # Replace user mentions with actual usernames
+    text = USER_PATTERN.sub(lambda match: '@{}'.format(user_names_by_id.get(match.group(1), 'UNKNOWN')), text)
+    # Replace channel mentions with channel names
+    text = CHANNEL_PATTERN.sub(lambda match: '#{}'.format(match.group(1) or 'UNKNOWN'), text)
+    # Unwrap links, preferring the label if it differs from the URL
+    text = LINK_PATTERN.sub(lambda match: match.group(2) or match.group(1), text)
+    # Slack escapes &, < and >; the frontend does its own escaping
+    return html.unescape(text)
 
 
 def channel_message(data):
@@ -250,12 +277,7 @@ def channel_message(data):
         # Not a plain message
         return
 
-    text = message['text']
-
-    # Replace user mentions with actual usernames
-    text = re.sub(USER_PATTERN, lambda match: '@{}'.format(user_names_by_id.get(match.group(1), 'UNKNOWN')), text)
-    # Replace channel mentions with channel names
-    text = re.sub(CHANNEL_PATTERN, lambda match: '#{}'.format(match.group(1) or 'UNKNOWN'), text)
+    text = slack_to_plain_text(message['text'])
 
     user_id = message['user']
 
@@ -283,6 +305,8 @@ def slack_actions():
     initial URL-verification handshake, and dispatches `message` events to
     `channel_message`.
     """
+    if not SLACK_ENABLED:
+        flask.abort(503)
     raw_body = flask.request.get_data()
     if not signature_verifier.is_valid_request(raw_body, dict(flask.request.headers)):
         flask.abort(403)

@@ -13,56 +13,21 @@ const fetchEmoji = async () => {
 
 let customEmoji = {};
 
-const emojiHTML = (emojiName) => {
-  if (emojiName in BUILTIN_EMOJIS) {
-    return BUILTIN_EMOJIS[emojiName];
-  } else if (emojiName in customEmoji) {
-    return `<img class="customEmoji" src="${customEmoji[emojiName]}" alt="${emojiName}" />`;
-  }
-  return '';
-}
+// Renders message text to HTML, animating its emoji unless suppressed
+const renderAndAnimate = (text) => {
+  const { html, emojis } = renderMessage(text, BUILTIN_EMOJIS, customEmoji);
 
-const replaceEmoji = (str) => {
-  const emojis = str.match(/:[^:]*:/g);
-  if (!emojis) {
-    return str;
-  }
-
-  // Pick one animation style for the entire message
-  const animation = animations[Math.floor(Math.random() * animations.length)];
-
-  emojis.forEach((emoji) => {
-    // Strip :s
-    const emojiName = emoji.slice(1, emoji.length-1);
-    const html = emojiHTML(emojiName)
-    str = str.replace(emoji, html);
-    if (!emojiName.startsWith('skin-tone-') && !suppressAnimations) {
-      animateEmoji(html, animation);
-    }
-  });
-
-  return str;
-};
-
-const escapeHTML = (str) => {
-  const el = document.createElement('textarea');
-  el.textContent = str;
-  return el.innerHTML;
-};
-
-const stringToColor = (str) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    hash |= 0; // keep 32-bit
+  if (emojis.length > 0 && !suppressAnimations) {
+    // Pick one animation style for the entire message
+    const animation = animations[Math.floor(Math.random() * animations.length)];
+    emojis.forEach((emoji) => {
+      if (!emoji.name.startsWith('skin-tone-')) {
+        animateEmoji(emoji.html, animation);
+      }
+    });
   }
 
-  const hue = ((hash % 360) + 360) % 360;
-
-  const sat = 65 + (Math.abs(hash) % 20);     // 65–85%
-  const light = 55 + (Math.abs(hash >> 3) % 15); // 55–70%
-
-  return `hsl(${hue}, ${sat}%, ${light}%)`;
+  return html;
 };
 
 const historyMode = new URLSearchParams(window.location.search).has('history');
@@ -126,7 +91,7 @@ const updateMessages = () => {
       authorEl.classList.add('messageAuthor');
 
       const textEl = document.createElement('span');
-      textEl.innerHTML = replaceEmoji(escapeHTML(message.text));
+      textEl.innerHTML = renderAndAnimate(message.text);
       textEl.classList.add('messageText');
       // Generate a random color based on username, because why not
       textEl.style.color = stringToColor(message.author);

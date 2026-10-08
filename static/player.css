@@ -1,62 +1,107 @@
-* {
-  box-sizing: border-box;
-}
-
 html,
 body {
-  background-color: #111111;
   height: 100%;
   width: 100%;
   margin: 0;
 }
 
-body {
-  font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
-  color: #CCCCCC;
-  --buffer: min(4vw, 30px);
-}
-
-code {
-  font-family: 'Courier New', Courier, monospace;
-}
-
 #container {
   height: 100%;
-  min-width: 100%;
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
 }
+
+/* --- Top bar --- */
 
 #header {
-  flex-shrink: 1;
-  text-align: center;
-  padding: calc(var(--buffer)/3);
+  display: flex;
+  align-items: center;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
 }
 
-#header>h1 {
-  display: block;
+#header h1 {
+  font-size: 1.5em;
   font-weight: bold;
-  font-size: min(6vw, 16pt);
-  line-height: 1.8em;
+  color: var(--accent);
 }
 
-#header>p {
-  display: block;
-  font-size: min(3vw, 12pt);
-  line-height: 1.3em;
+#header .intro {
+  flex: 1 1 240px;
+  color: var(--muted);
+  font-size: 0.9em;
 }
+
+#header nav {
+  display: flex;
+  gap: 10px;
+}
+
+#header nav a {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+#header nav a:hover {
+  border-color: var(--accent);
+}
+
+#header nav a.primary {
+  color: #111111;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#header nav a.primary:hover {
+  filter: brightness(1.1);
+}
+
+/* --- Player --- */
 
 #playerContainer {
-  width: 100%;
-  height: 100%;
-  padding: var(--buffer);
-  flex-grow: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: min(3vw, 20px);
 }
 
 #playerWrapper {
-  border: 2px solid #333333;
   width: 100%;
   height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000000;
+}
+
+@media (max-width: 600px) {
+  #header {
+    padding: 12px 16px;
+  }
+
+  #header nav {
+    width: 100%;
+  }
+
+  #header nav a {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Keep a 16:9 player instead of stretching to fill a tall phone screen */
+  #playerContainer {
+    flex: 0 0 auto;
+  }
+
+  #playerWrapper {
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
 }

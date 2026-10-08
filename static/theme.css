@@ -1,0 +1,38 @@
+/* Shared palette and base styles for the player and submit pages */
+
+:root {
+  --bg: #111111;
+  --panel: #1c1c1c;
+  --border: #333333;
+  --text: #dddddd;
+  --muted: #888888;
+  --accent: #ffcc33;
+  --error: #ff6b6b;
+  --success: #6bd68a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+a {
+  color: var(--accent);
+}
+
+kbd,
+code {
+  font-family: monospace;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  color: var(--text);
+}

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-
+<html lang="en">
 <head>
+  <meta charset="utf-8"/>
   <title>Hecklevision!</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/video-js_8.23.4.css') }}"/>
@@ -8,6 +9,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/silvermine-videojs-airplay_1.3.0.css') }}"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/videojs-hls-quality-selector_2.0.0.css') }}"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='reset.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='player.css') }}"/>
   <script src="{{ url_for('static', filename='vendor/video_8.23.4.min.js') }}"></script>
 
@@ -16,15 +18,14 @@
 
 <body>
   <div id="container">
-    <div id="header">
-      <p>
-        Join <code>#heckle</code> in Slack and send messages to start heckling!
-      </p>
-      <p>
-        If you don't have Slack, you can also <a href="/submit">submit messages</a>, or see the
-        <a href="/messages?history">heckle history</a>.
-      </p>
-    </div>
+    <header id="header">
+      <h1>Hecklevision</h1>
+      <p class="intro">Join <code>#heckle</code> in Slack, or send messages from the web.</p>
+      <nav>
+        <a href="/submit" class="primary">Send a heckle</a>
+        <a href="/messages?history">History</a>
+      </nav>
+    </header>
     <div id="playerContainer">
       <div id="playerWrapper">
         <video id="video" class="video-js vjs-default-skin">
@@ -41,3 +42,4 @@
 
   <script src="{{ url_for('static', filename='player.js') }}"></script>
 </body>
+</html>
