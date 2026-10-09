@@ -115,6 +115,12 @@ describe('stringToColor', () => {
     assert.equal(stringToColor('tom'), stringToColor('tom'));
     assert.match(stringToColor('tom'), /^hsl\(\d+, \d+%, \d+%\)$/);
   });
+
+  test('ignores case', () => {
+    assert.equal(stringToColor('Tom'), stringToColor('tom'));
+    assert.equal(stringToColor('TOM'), stringToColor('tom'));
+    assert.notEqual(stringToColor('tom'), stringToColor('alice'));
+  });
 });
 
 describe('findEmojiQuery', () => {

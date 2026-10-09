@@ -78,7 +78,9 @@ const renderMessage = (text, builtinEmoji = {}, customEmoji = {}) => {
 // character rather than two UTF-16 units
 const messageLength = (text) => [...text.replace(new RegExp(EMOJI_PATTERN.source, 'gi'), 'x'.repeat(EMOJI_LENGTH))].length;
 
+// Case-insensitive, so "Tom" and "tom" get the same colour
 const stringToColor = (str) => {
+  str = str.toLowerCase();
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
