@@ -340,7 +340,7 @@ const renderRecent = (newTimestamps) => {
     const itemEl = document.createElement('li');
     itemEl.classList.toggle('new', newTimestamps.has(message.timestamp));
     itemEl.innerHTML = [
-      `<span class="recentTime">${formatTime(message.timestamp)}</span>`,
+      `<span class="recentTime">${formatTime(message.timestamp)}</span> `,
       '<span>',
       `<span class="recentAuthor">${escapeHTML(message.author)}</span>: `,
       `<span class="recentText" style="color: ${stringToColor(message.author)}">`,

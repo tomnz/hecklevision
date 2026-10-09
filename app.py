@@ -146,7 +146,16 @@ SUCCESS_RESPONSES = [
 DELAY_NOTE = 'Heckles show up on screen about 10 seconds after sending, so no need to resend.'
 
 
+def clean_text(text):
+    """Collapse line breaks and other runs of whitespace into single spaces.
+
+    Heckles are shown on one line, so this makes the stored text match what's displayed.
+    """
+    return ' '.join((text or '').split())
+
+
 def heckle(user_id, text, user_name=None):
+    text = clean_text(text)
     if not text:
         return False, 'You need to give me something to heckle with!'
 
@@ -195,7 +204,7 @@ def post_view():
     if ENABLE_BOT_RELAY:
         slack_client.chat_postMessage(
             channel=HECKLE_CHANNEL,
-            text='*{}*: {}'.format(user_names_by_id.get(user_id, user_id), text),
+            text='*{}*: {}'.format(user_names_by_id.get(user_id, user_id), clean_text(text)),
         )
 
     return flask.jsonify({
@@ -250,7 +259,7 @@ def submit_view():
         if success and ENABLE_BOT_RELAY:
             slack_client.chat_postMessage(
                 channel=HECKLE_CHANNEL,
-                text='*{}*: {}'.format(user_name, text),
+                text='*{}*: {}'.format(user_name, clean_text(text)),
             )
 
         return flask.jsonify({

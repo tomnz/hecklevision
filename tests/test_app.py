@@ -57,6 +57,28 @@ class HeckleTest(AppTestCase):
         text = ': ' + 'x' * (app.MESSAGE_LENGTH_LIMIT - 3) + ' :'
         self.assertFalse(app.heckle(None, text, 'a')[0])
 
+    def test_line_breaks_become_spaces(self):
+        app.heckle(None, 'first line\nsecond line\r\nthird', 'tom')
+        self.assertEqual(app.messages[-1].text, 'first line second line third')
+
+    def test_whitespace_runs_are_collapsed_and_trimmed(self):
+        app.heckle(None, '  lots   of\t\tspace  \n ', 'tom')
+        self.assertEqual(app.messages[-1].text, 'lots of space')
+
+    def test_whitespace_only_message_is_rejected(self):
+        ok, response = app.heckle(None, ' \n\t ', 'tom')
+        self.assertFalse(ok)
+        self.assertIn('something to heckle', response)
+
+    def test_length_is_checked_after_cleaning(self):
+        # 200 characters once the padding and line breaks are collapsed
+        text = '\n\n' + 'x' * 100 + '\n\n\n' + 'y' * 99 + '   '
+        self.assertTrue(app.heckle(None, text, 'tom')[0])
+
+    def test_emoji_sequences_survive_cleaning(self):
+        app.heckle(None, 'family 👨\u200d👩\u200d👧\nnext', 'tom')
+        self.assertEqual(app.messages[-1].text, 'family 👨\u200d👩\u200d👧 next')
+
     def test_history_is_trimmed(self):
         for i in range(app.MESSAGE_HISTORY + 5):
             app.heckle(None, 'm{}'.format(i), 'user{}'.format(i))

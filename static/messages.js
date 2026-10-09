@@ -21,7 +21,7 @@ const renderAndAnimate = (text) => {
     // Pick one animation style for the entire message
     const animation = animations[Math.floor(Math.random() * animations.length)];
     emojis.forEach((emoji) => {
-      if (!emoji.name.startsWith('skin-tone-')) {
+      if (!emoji.name.startsWith('skin-tone-') && !/^\p{Emoji_Modifier}$/u.test(emoji.name)) {
         animateEmoji(emoji.html, animation);
       }
     });

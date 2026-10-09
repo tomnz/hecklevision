@@ -1,3 +1,11 @@
+/* The platform's colour emoji font, limited to emoji code points. Listed first in the
+   font stack so DejaVu's monochrome smileys never win, without changing the text font. */
+@font-face {
+  font-family: "Color Emoji";
+  src: local("Apple Color Emoji"), local("Segoe UI Emoji"), local("Noto Color Emoji"), local("Twemoji Mozilla");
+  unicode-range: U+1F000-1FAFF, U+2600-27BF, U+2B00-2BFF, U+FE0F, U+200D;
+}
+
 html, body {
   background-color: rgba(0, 0, 0, 0);
   width: 100%;
@@ -11,7 +19,7 @@ html {
 
 body {
   min-height: 100vh;
-  font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  font-family: "Color Emoji", "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
   font-size: 40pt;
   color: #FFFFFF;
 }

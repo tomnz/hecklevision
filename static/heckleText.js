@@ -5,6 +5,15 @@
 const EMOJI_NAME_CHARS = "[a-z0-9_+'.-]";
 const EMOJI_PATTERN = new RegExp(`:(${EMOJI_NAME_CHARS}+):`, 'gi');
 
+// Emoji typed directly as characters. A presentation emoji (or any pictograph followed
+// by U+FE0F) with an optional skin tone, joined by ZWJ into sequences like 👨‍👩‍👧, plus
+// flags and keycaps. Text-style symbols such as © and ™ don't count.
+const RAW_EMOJI_PART = String.raw`(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F)\p{Emoji_Modifier}?`;
+const RAW_EMOJI_PATTERN = new RegExp(
+  String.raw`\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|${RAW_EMOJI_PART}(?:\u200D\p{Extended_Pictographic}\uFE0F?\p{Emoji_Modifier}?)*`,
+  'gu',
+);
+
 // Mirrors MESSAGE_LENGTH_LIMIT in app.py
 const MESSAGE_LENGTH_LIMIT = 200;
 // Each emoji shortcode counts as this many characters (matches app.py)
@@ -31,13 +40,21 @@ const emojiHTML = (name, builtinEmoji, customEmoji) => {
 // Converts raw message text into safe HTML, substituting known :emoji: codes.
 // Unknown codes (and stray colons, as in times or URLs) are left as literal text.
 // Returns { html, emojis }, where emojis lists { name, html } for each emoji found,
-// in order, so callers can animate them.
+// in order, so callers can animate them. Emoji typed as characters are included too,
+// with the character itself as the name.
 const renderMessage = (text, builtinEmoji = {}, customEmoji = {}) => {
   const pattern = new RegExp(EMOJI_PATTERN.source, 'gi');
   const parts = [];
   const emojis = [];
   let consumed = 0;
   let match;
+
+  const pushText = (segment) => {
+    parts.push(escapeHTML(segment));
+    for (const [raw] of segment.matchAll(RAW_EMOJI_PATTERN)) {
+      emojis.push({ name: raw, html: raw });
+    }
+  };
 
   while ((match = pattern.exec(text)) !== null) {
     const name = match[1];
@@ -47,18 +64,19 @@ const renderMessage = (text, builtinEmoji = {}, customEmoji = {}) => {
       pattern.lastIndex = match.index + 1;
       continue;
     }
-    parts.push(escapeHTML(text.slice(consumed, match.index)));
+    pushText(text.slice(consumed, match.index));
     parts.push(html);
     emojis.push({ name, html });
     consumed = match.index + match[0].length;
   }
-  parts.push(escapeHTML(text.slice(consumed)));
+  pushText(text.slice(consumed));
 
   return { html: parts.join(''), emojis };
 };
 
-// Message length as the server counts it
-const messageLength = (text) => text.replace(new RegExp(EMOJI_PATTERN.source, 'gi'), 'x'.repeat(EMOJI_LENGTH)).length;
+// Message length as the server counts it: code points (Python's len), so 😂 is one
+// character rather than two UTF-16 units
+const messageLength = (text) => [...text.replace(new RegExp(EMOJI_PATTERN.source, 'gi'), 'x'.repeat(EMOJI_LENGTH))].length;
 
 const stringToColor = (str) => {
   let hash = 0;

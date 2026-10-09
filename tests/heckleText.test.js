@@ -224,3 +224,46 @@ describe('pickerEmojiNames', () => {
     assert.equal(pickerEmojiNames(BUILTIN).length, glyphs.size);
   });
 });
+
+describe('raw emoji characters', () => {
+  const names = (text) => render(text).emojis.map((e) => e.name);
+
+  test('are reported for animation and left in the HTML', () => {
+    const { html, emojis } = render('lol 😂 nice 🔥');
+    assert.equal(html, 'lol 😂 nice 🔥');
+    assert.deepEqual(emojis, [{ name: '😂', html: '😂' }, { name: '🔥', html: '🔥' }]);
+  });
+
+  test('keep their order alongside shortcodes', () => {
+    assert.deepEqual(names('🔥 :joy: 💀'), ['🔥', 'joy', '💀']);
+  });
+
+  test('treat multi-code-point emoji as one', () => {
+    assert.deepEqual(names('👍🏽'), ['👍🏽']);
+    assert.deepEqual(names('👨‍👩‍👧'), ['👨‍👩‍👧']);
+    assert.deepEqual(names('🏳️‍🌈'), ['🏳️‍🌈']);
+    assert.deepEqual(names('❤️‍🔥'), ['❤️‍🔥']);
+    assert.deepEqual(names('🇳🇿'), ['🇳🇿']);
+    assert.deepEqual(names('1️⃣'), ['1️⃣']);
+  });
+
+  test('count adjacent emoji separately', () => {
+    assert.deepEqual(names('😂😂🔥'), ['😂', '😂', '🔥']);
+  });
+
+  test('include text-default pictographs only with the emoji selector', () => {
+    assert.deepEqual(names('❤️'), ['❤️']);
+    assert.deepEqual(names('❤'), []);
+  });
+
+  test('ignore text symbols, digits and punctuation', () => {
+    assert.deepEqual(names('© ™ ® 123 # * ! ‼ → ✓'), []);
+  });
+});
+
+describe('messageLength with raw emoji', () => {
+  test('counts code points like the server', () => {
+    assert.equal(messageLength('😂'), 1);
+    assert.equal(messageLength('hi 😂😂'), 5);
+  });
+});
