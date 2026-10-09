@@ -189,3 +189,38 @@ describe('mergeRecent', () => {
     assert.equal(recent[19].timestamp, 10);
   });
 });
+
+describe('insertEmoji', () => {
+  const { insertEmoji } = require('../static/heckleText.js');
+
+  test('inserts into an empty message', () => {
+    assert.deepEqual(insertEmoji('', 0, 0, 'joy'), { text: ':joy: ', cursor: 6 });
+  });
+
+  test('adds a space after a word', () => {
+    assert.deepEqual(insertEmoji('lol', 3, 3, 'joy'), { text: 'lol :joy: ', cursor: 10 });
+  });
+
+  test('does not double spaces', () => {
+    assert.deepEqual(insertEmoji('lol ', 4, 4, 'joy'), { text: 'lol :joy: ', cursor: 10 });
+    assert.deepEqual(insertEmoji('a b', 1, 1, 'joy'), { text: 'a :joy: b', cursor: 7 });
+  });
+
+  test('replaces a selection', () => {
+    assert.deepEqual(insertEmoji('I love it', 2, 6, 'heart'), { text: 'I :heart: it', cursor: 9 });
+  });
+});
+
+describe('pickerEmojiNames', () => {
+  const { pickerEmojiNames } = require('../static/heckleText.js');
+
+  test('keeps one name per glyph and drops skin tones', () => {
+    const names = pickerEmojiNames({ thumbsup: 'T', '+1': 'T', joy: 'J', 'skin-tone-2': 'S' });
+    assert.deepEqual(names, ['+1', 'joy']);
+  });
+
+  test('every builtin glyph stays reachable', () => {
+    const glyphs = new Set(Object.entries(BUILTIN).filter(([n]) => !n.startsWith('skin-tone-')).map(([, g]) => g));
+    assert.equal(pickerEmojiNames(BUILTIN).length, glyphs.size);
+  });
+});

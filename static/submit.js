@@ -8,6 +8,10 @@ const responseEl = document.getElementById('response');
 const charCountEl = document.getElementById('charCount');
 const popupEl = document.getElementById('emojiPopup');
 const previewEl = document.getElementById('preview');
+const emojiButtonEl = document.getElementById('emojiButton');
+const pickerEl = document.getElementById('emojiPicker');
+const pickerSearchEl = document.getElementById('emojiSearch');
+const pickerGridEl = document.getElementById('emojiGrid');
 const recentListEl = document.getElementById('recentList');
 const recentEmptyEl = document.getElementById('recentEmpty');
 
@@ -38,6 +42,10 @@ const loadCustomEmoji = async () => {
     emojiNames = [...new Set([...Object.keys(BUILTIN_EMOJIS), ...Object.keys(customEmoji)])];
     updatePreview();
     renderRecent(new Set());
+    defaultPickerHTML = null;
+    if (!pickerEl.hidden) {
+      renderPicker();
+    }
   } catch (err) {
     console.warn('Could not load custom emoji', err);
   }
@@ -71,7 +79,7 @@ const updatePreview = () => {
 
   if (!text.trim()) {
     previewEl.classList.add('empty');
-    previewEl.textContent = 'Your message will look like this on screen';
+    previewEl.textContent = 'Your heckle will look like this';
     return;
   }
 
@@ -191,12 +199,128 @@ textEl.addEventListener('keydown', (event) => {
 });
 
 textEl.addEventListener('input', () => {
+  closePicker();
   updatePopup();
   updatePreview();
 });
 textEl.addEventListener('click', updatePopup);
 textEl.addEventListener('blur', closePopup);
 userNameEl.addEventListener('input', updatePreview);
+
+// --- Emoji picker ------------------------------------------------------------
+
+const POPULAR_EMOJI = [
+  'joy', 'rolling_on_the_floor_laughing', 'sob', 'scream', 'skull', 'fire', 'eyes',
+  'thinking_face', 'face_palm', 'clap', '+1', '-1', 'heart', 'popcorn', 'tada', '100',
+  'boom', 'rage', 'grimacing', 'see_no_evil', 'ghost', 'rocket', 'pray', 'sweat_smile',
+  'face_with_rolling_eyes', 'sleeping', 'zzz', 'hankey', 'clown_face', 'nauseated_face',
+  'exploding_head', 'cry', 'kissing_heart', 'heart_eyes', 'sunglasses', 'upside_down_face',
+  'shushing_face', 'face_with_symbols_on_mouth', 'wave', 'ok_hand', 'muscle', 'crown',
+  'trophy', 'movie_camera', 'clapper',
+];
+const PICKER_SEARCH_LIMIT = 120;
+
+// The unfiltered grid is ~1,500 buttons, so build it once and reuse it
+let defaultPickerHTML = null;
+
+const isTouchScreen = () => window.matchMedia('(pointer: coarse)').matches;
+
+const emojiCellHTML = (name) => [
+  `<button type="button" class="emojiCell" data-name="${escapeHTML(name)}" title=":${escapeHTML(name)}:">`,
+  emojiHTML(name, BUILTIN_EMOJIS, customEmoji),
+  '</button>',
+].join('');
+
+const emojiCellsHTML = (names) => `<div class="emojiCells">${names.map(emojiCellHTML).join('')}</div>`;
+
+const pickerSectionHTML = (title, names) => (names.length > 0 ? `<h3>${title}</h3>${emojiCellsHTML(names)}` : '');
+
+const renderPicker = () => {
+  const query = pickerSearchEl.value.trim().replace(/^:|:$/g, '').toLowerCase();
+
+  if (query) {
+    // Search every name (aliases included), but show each glyph once
+    const seen = new Set();
+    const results = searchEmoji(query, emojiNames, Infinity).filter((name) => {
+      const html = emojiHTML(name, BUILTIN_EMOJIS, customEmoji);
+      if (seen.has(html)) {
+        return false;
+      }
+      seen.add(html);
+      return true;
+    }).slice(0, PICKER_SEARCH_LIMIT);
+    pickerGridEl.innerHTML = results.length > 0
+      ? emojiCellsHTML(results)
+      : '<p class="emojiPickerEmpty">No emoji found</p>';
+    return;
+  }
+
+  if (defaultPickerHTML === null) {
+    defaultPickerHTML = [
+      pickerSectionHTML('Slack', Object.keys(customEmoji).sort()),
+      pickerSectionHTML('Popular', POPULAR_EMOJI),
+      pickerSectionHTML('All emoji', pickerEmojiNames(BUILTIN_EMOJIS)),
+    ].join('');
+  }
+  pickerGridEl.innerHTML = defaultPickerHTML;
+};
+
+const openPicker = () => {
+  closePopup();
+  pickerSearchEl.value = '';
+  renderPicker();
+  pickerGridEl.scrollTop = 0;
+  pickerEl.hidden = false;
+  emojiButtonEl.setAttribute('aria-expanded', 'true');
+  // On touch devices, focusing the search box would pop up the keyboard over the grid
+  if (!isTouchScreen()) {
+    pickerSearchEl.focus();
+  }
+};
+
+const closePicker = () => {
+  if (pickerEl.hidden) {
+    return;
+  }
+  pickerEl.hidden = true;
+  emojiButtonEl.setAttribute('aria-expanded', 'false');
+};
+
+emojiButtonEl.addEventListener('click', () => {
+  if (pickerEl.hidden) {
+    openPicker();
+  } else {
+    closePicker();
+    textEl.focus();
+  }
+});
+
+// Inserting keeps the picker open so several emoji can be added in a row
+pickerGridEl.addEventListener('click', (event) => {
+  const cellEl = event.target.closest('.emojiCell');
+  if (!cellEl) {
+    return;
+  }
+  const result = insertEmoji(textEl.value, textEl.selectionStart, textEl.selectionEnd, cellEl.dataset.name);
+  textEl.value = result.text;
+  textEl.setSelectionRange(result.cursor, result.cursor);
+  updatePreview();
+});
+
+pickerSearchEl.addEventListener('input', renderPicker);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !pickerEl.hidden) {
+    closePicker();
+    textEl.focus();
+  }
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!pickerEl.hidden && !pickerEl.contains(event.target) && !emojiButtonEl.contains(event.target)) {
+    closePicker();
+  }
+});
 
 // --- Recent heckles ---------------------------------------------------------
 

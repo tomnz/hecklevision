@@ -112,6 +112,8 @@ user_last_posted = collections.defaultdict(lambda: 0.0)
 
 # Limit user message length. Mirrored in static/heckleText.js.
 MESSAGE_LENGTH_LIMIT = 200
+# Limit names typed into the web form. Mirrored by maxlength in templates/submit.html.
+NAME_LENGTH_LIMIT = 40
 EMOJI_PATTERN = re.compile(r":[a-z0-9_+'.-]+:", re.IGNORECASE)
 
 
@@ -148,25 +150,22 @@ def heckle(user_id, text, user_name=None):
     if not text:
         return False, 'You need to give me something to heckle with!'
 
-    if text.lower().startswith('help'):
-        return False, 'This is really easy, I promise. Just type `/heckle Wow this movie sucks!` or whatever ' \
-                      'you want to heckle with!'
-
     # Kind of arbitrary, but count emojis as four characters only
     text_len = len(EMOJI_PATTERN.sub('xxxx', text))
     if text_len > MESSAGE_LENGTH_LIMIT:
         return False, 'Keep your rants to yourself. No more than {} characters please.'.format(MESSAGE_LENGTH_LIMIT)
 
     user_name = user_name or user_names_by_id.get(user_id, 'UNKNOWN')
+    # Slack users are throttled by ID; web users only have the name they typed
+    throttle_key = user_id or 'web:{}'.format(user_name.lower())
 
     with message_lock:
         timestamp = time.time()
 
-        if user_id:
-            last_posted = timestamp - user_last_posted[user_id]
-            if last_posted < USER_SILENCE_SECS:
-                return False, 'You can\'t heckle again so soon! Try again in {:.1f} seconds.'.format(
-                    USER_SILENCE_SECS - last_posted)
+        last_posted = timestamp - user_last_posted[throttle_key]
+        if last_posted < USER_SILENCE_SECS:
+            return False, 'You can\'t heckle again so soon! Try again in {:.1f} seconds.'.format(
+                USER_SILENCE_SECS - last_posted)
 
         print('[Saving message] {}: {}'.format(user_name, text))
         messages.append(Message(
@@ -174,7 +173,7 @@ def heckle(user_id, text, user_name=None):
             text=text,
             timestamp=timestamp,
         ))
-        user_last_posted[user_id] = timestamp
+        user_last_posted[throttle_key] = timestamp
         # Cleanup old things
         while len(messages) > MESSAGE_HISTORY:
             messages.popleft()
@@ -196,7 +195,7 @@ def post_view():
     if ENABLE_BOT_RELAY:
         slack_client.chat_postMessage(
             channel=HECKLE_CHANNEL,
-            text='*{}*: {}'.format(user_names_by_id[user_id], text),
+            text='*{}*: {}'.format(user_names_by_id.get(user_id, user_id), text),
         )
 
     return flask.jsonify({
@@ -206,7 +205,10 @@ def post_view():
 
 @app.route('/get', methods=['GET'])
 def get_view():
-    after = float(flask.request.args.get('after') or 0)
+    try:
+        after = float(flask.request.args.get('after') or 0)
+    except ValueError:
+        flask.abort(400)
     # Copy under the lock; iterating the deque while another thread appends raises
     with message_lock:
         response_messages = [message for message in messages if message.timestamp > after]
@@ -238,6 +240,11 @@ def submit_view():
         text = data.get('text', '').strip()
         if not user_name:
             return flask.jsonify({'ok': False, 'text': 'You need to give me a name!'})
+        if len(user_name) > NAME_LENGTH_LIMIT:
+            return flask.jsonify({
+                'ok': False,
+                'text': 'That name is a bit long. No more than {} characters please.'.format(NAME_LENGTH_LIMIT),
+            })
         success, response = heckle(None, text, user_name)
 
         if success and ENABLE_BOT_RELAY:

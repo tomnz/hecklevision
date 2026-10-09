@@ -53,6 +53,12 @@ Message rendering, emoji parsing and autocomplete live in `static/heckleText.js`
 node --test
 ```
 
+The Flask side (`heckle()` validation and throttling, Slack text cleanup, endpoints) is tested with the standard library's `unittest`, in local mode:
+
+```sh
+.venv/bin/python -m unittest discover tests
+```
+
 ## Endpoints
 
 | Path | What it does |

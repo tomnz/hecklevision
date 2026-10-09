@@ -133,6 +133,39 @@ const completeEmoji = (text, cursor, name) => {
   };
 };
 
+// --- Emoji picker ------------------------------------------------------------
+
+// Inserts ":name: " at the cursor (replacing any selection), adding a leading space
+// when needed so the code isn't glued to the previous word.
+const insertEmoji = (text, selectionStart, selectionEnd, name) => {
+  const before = text.slice(0, selectionStart);
+  const after = text.slice(selectionEnd);
+  const lead = before === '' || /\s$/.test(before) ? '' : ' ';
+  const trail = /^\s/.test(after) ? '' : ' ';
+  const insert = `${lead}:${name}:${trail}`;
+  return {
+    text: before + insert + after,
+    cursor: before.length + insert.length,
+  };
+};
+
+// Builtin names for the picker grid: one name per glyph (many emoji have aliases,
+// e.g. :+1: and :thumbsup:), skin tone modifiers dropped, sorted alphabetically.
+const pickerEmojiNames = (builtinEmoji) => {
+  const seenGlyphs = new Set();
+  return Object.keys(builtinEmoji)
+    .filter((name) => !name.startsWith('skin-tone-'))
+    .sort()
+    .filter((name) => {
+      const glyph = builtinEmoji[name];
+      if (seenGlyphs.has(glyph)) {
+        return false;
+      }
+      seenGlyphs.add(glyph);
+      return true;
+    });
+};
+
 // --- Recent messages ---------------------------------------------------------
 
 // Merges newly fetched messages into a recent list: deduplicated by timestamp,
@@ -157,6 +190,8 @@ if (typeof module !== 'undefined') {
     findEmojiQuery,
     searchEmoji,
     completeEmoji,
+    insertEmoji,
+    pickerEmojiNames,
     mergeRecent,
   };
 }

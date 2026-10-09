@@ -28,7 +28,14 @@
                 <div class="inputWrapper">
                     <input type="text" name="text" id="text" placeholder="Enhance! :mag:"
                            role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="emojiPopup" />
+                    <button type="button" id="emojiButton" class="emojiButton" aria-label="Browse emoji"
+                            aria-expanded="false" aria-controls="emojiPicker">&#x1F600;</button>
                     <ul id="emojiPopup" role="listbox" hidden></ul>
+                    <div id="emojiPicker" class="emojiPicker" hidden>
+                        <input type="search" id="emojiSearch" placeholder="Search emoji" aria-label="Search emoji"
+                               autocomplete="off" />
+                        <div id="emojiGrid" class="emojiGrid"></div>
+                    </div>
                 </div>
                 <div class="hint">
                     <span id="charCount" aria-live="polite"></span>
