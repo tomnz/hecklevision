@@ -115,14 +115,33 @@ MESSAGE_LENGTH_LIMIT = 200
 EMOJI_PATTERN = re.compile(r":[a-z0-9_+'.-]+:", re.IGNORECASE)
 
 
+# Emoji use Slack shortcodes so they render in Slack replies and on the submit page.
+# tests/quips.test.js checks each one exists in static/builtinEmojis.js.
 SUCCESS_RESPONSES = [
-    'Got em!',
-    'Oh, so you think you\'re clever huh?',
-    'Let\'s see how that one lands...',
-    'One heckle, coming right up!',
-    'You make heckling look easy!',
-    'You funny mother fucker.',
+    'Got em! :dart:',
+    'Oh, so you think you\'re clever huh? :face_with_raised_eyebrow:',
+    'Let\'s see how that one lands... :popcorn:',
+    'One heckle, coming right up! :bellhop_bell:',
+    'You make heckling look easy! :sunglasses:',
+    'You funny mother fucker. :joy:',
+    'Critics everywhere are shaking. :scream:',
+    'Somewhere, the director just felt a chill. :cold_face:',
+    'Bold. Let\'s see if the room agrees. :thinking_face:',
+    'Fired off. No take-backs. :rocket:',
+    'The fourth wall never stood a chance. :boom:',
+    'That one\'s going in the director\'s cut. :clapper:',
+    'Ooh, spicy. :hot_pepper:',
+    'Rotten Tomatoes wants your number. :tomato:',
+    'Heckle delivered. The actors have been notified. :incoming_envelope:',
+    'Ruthless. We love it. :fire:',
+    'Somebody get this person a podcast. :microphone:',
+    'Thank you for your service. :medal:',
+    'Sir, this is a movie theater. :movie_camera:',
+    'Five stars, would heckle again. :star:',
+    'The popcorn just got saltier. :salt:',
 ]
+
+DELAY_NOTE = 'Heckles show up on screen about 10 seconds after sending, so no need to resend.'
 
 
 def heckle(user_id, text, user_name=None):
@@ -160,8 +179,7 @@ def heckle(user_id, text, user_name=None):
         while len(messages) > MESSAGE_HISTORY:
             messages.popleft()
 
-    return True, '{}\nThere may be a short delay before your message appears, you don\'t need to retry.'.format(
-        random.choice(SUCCESS_RESPONSES))
+    return True, random.choice(SUCCESS_RESPONSES)
 
 
 @app.route('/post', methods=['POST'])
@@ -171,7 +189,9 @@ def post_view():
     data = flask.request.form
     user_id = data['user_id']
     text = data.get('text', None)
-    _, response = heckle(user_id, text)
+    success, response = heckle(user_id, text)
+    if success:
+        response = '{}\n{}'.format(response, DELAY_NOTE)
 
     if ENABLE_BOT_RELAY:
         slack_client.chat_postMessage(

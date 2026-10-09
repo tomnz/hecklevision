@@ -11,6 +11,23 @@ const previewEl = document.getElementById('preview');
 const recentListEl = document.getElementById('recentList');
 const recentEmptyEl = document.getElementById('recentEmpty');
 
+// Example heckles, one picked at random for the message placeholder
+const PLACEHOLDERS = [
+  'Enhance! :mag:',
+  'Just kiss already :kissing_heart:',
+  'Don\'t go in the basement :ghost:',
+  'That\'s not how computers work :computer:',
+  'Run, you fool! :runner:',
+  'I could direct this from my couch :couch_and_lamp:',
+  'Bold choice of haircut :eyes:',
+  'He\'s been dead the whole time :skull:',
+  'I can\'t watch :see_no_evil:',
+  'This soundtrack slaps :notes:',
+  'Nobody acts like this :face_with_rolling_eyes:',
+  'Classic villain monologue :man-facepalming:',
+];
+textEl.placeholder = PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)];
+
 let customEmoji = {};
 let emojiNames = Object.keys(BUILTIN_EMOJIS);
 
@@ -233,10 +250,16 @@ const recentPoller = createPoller({
 
 // --- Submission --------------------------------------------------------------
 
+const RESPONSE_SHOW_MS = 30000;
+let responseTimer = null;
+
 const showResponse = (message, ok) => {
-  responseEl.textContent = message;
+  clearTimeout(responseTimer);
+  responseEl.innerHTML = renderMessage(message, BUILTIN_EMOJIS, customEmoji).html;
   responseEl.classList.toggle('success', ok);
   responseEl.classList.toggle('error', !ok);
+  responseEl.classList.remove('faded');
+  responseTimer = setTimeout(() => responseEl.classList.add('faded'), RESPONSE_SHOW_MS);
 };
 
 formEl.addEventListener('submit', async (event) => {
