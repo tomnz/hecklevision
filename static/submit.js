@@ -8,6 +8,8 @@ const responseEl = document.getElementById('response');
 const charCountEl = document.getElementById('charCount');
 const popupEl = document.getElementById('emojiPopup');
 const previewEl = document.getElementById('preview');
+const recentListEl = document.getElementById('recentList');
+const recentEmptyEl = document.getElementById('recentEmpty');
 
 let customEmoji = {};
 let emojiNames = Object.keys(BUILTIN_EMOJIS);
@@ -18,6 +20,7 @@ const loadCustomEmoji = async () => {
     customEmoji = await resp.json();
     emojiNames = [...new Set([...Object.keys(BUILTIN_EMOJIS), ...Object.keys(customEmoji)])];
     updatePreview();
+    renderRecent(new Set());
   } catch (err) {
     console.warn('Could not load custom emoji', err);
   }
@@ -178,6 +181,56 @@ textEl.addEventListener('click', updatePopup);
 textEl.addEventListener('blur', closePopup);
 userNameEl.addEventListener('input', updatePreview);
 
+// --- Recent heckles ---------------------------------------------------------
+
+const RECENT_LIMIT = 20;
+const RECENT_POLL_MS = 2000;
+const RECENT_LIFETIME_MS = 3 * 60 * 60 * 1000;
+
+let recentMessages = [];
+
+const formatTime = (timestamp) =>
+  new Date(timestamp * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+const renderRecent = (newTimestamps) => {
+  recentEmptyEl.hidden = recentMessages.length > 0;
+  recentListEl.innerHTML = '';
+  recentMessages.forEach((message) => {
+    const itemEl = document.createElement('li');
+    itemEl.classList.toggle('new', newTimestamps.has(message.timestamp));
+    itemEl.innerHTML = [
+      `<span class="recentTime">${formatTime(message.timestamp)}</span>`,
+      '<span>',
+      `<span class="recentAuthor">${escapeHTML(message.author)}</span>: `,
+      `<span class="recentText" style="color: ${stringToColor(message.author)}">`,
+      renderMessage(message.text, BUILTIN_EMOJIS, customEmoji).html,
+      '</span></span>',
+    ].join('');
+    recentListEl.appendChild(itemEl);
+  });
+};
+
+const fetchRecent = async () => {
+  const after = recentMessages.length > 0 ? recentMessages[0].timestamp : 0;
+  const resp = await fetch(`/get?after=${after}`);
+  const incoming = await resp.json();
+  if (incoming.length === 0) {
+    return;
+  }
+  // Only flash messages arriving after the initial load
+  const newTimestamps = new Set(after > 0 ? incoming.map((m) => m.timestamp) : []);
+  recentMessages = mergeRecent(recentMessages, incoming, RECENT_LIMIT);
+  renderRecent(newTimestamps);
+};
+
+const recentPoller = createPoller({
+  poll: fetchRecent,
+  intervalMs: RECENT_POLL_MS,
+  pauseWhenHidden: true,
+  maxLifetimeMs: RECENT_LIFETIME_MS,
+  onExpire: () => showRefreshBanner('Recent heckles stopped updating. Refresh to continue.'),
+});
+
 // --- Submission --------------------------------------------------------------
 
 const showResponse = (message, ok) => {
@@ -214,6 +267,7 @@ formEl.addEventListener('submit', async (event) => {
     if (data.ok) {
       textEl.value = '';
       updatePreview();
+      recentPoller.pollNow();
     }
   } catch (err) {
     showResponse('Something went wrong sending that. Try again?', false);
@@ -224,5 +278,7 @@ formEl.addEventListener('submit', async (event) => {
 });
 
 updatePreview();
+renderRecent(new Set());
 loadCustomEmoji();
+recentPoller.start();
 (userNameEl.value ? textEl : userNameEl).focus();

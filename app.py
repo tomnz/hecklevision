@@ -186,12 +186,10 @@ def post_view():
 
 @app.route('/get', methods=['GET'])
 def get_view():
-    after = flask.request.args.get('after', None)
+    after = float(flask.request.args.get('after') or 0)
+    # Copy under the lock; iterating the deque while another thread appends raises
     with message_lock:
-        if after:
-            response_messages = filter(lambda msg: msg.timestamp > float(after), messages)
-        else:
-            response_messages = messages
+        response_messages = [message for message in messages if message.timestamp > after]
 
     return flask.jsonify([
         {

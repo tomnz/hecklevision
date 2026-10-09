@@ -133,6 +133,18 @@ const completeEmoji = (text, cursor, name) => {
   };
 };
 
+// --- Recent messages ---------------------------------------------------------
+
+// Merges newly fetched messages into a recent list: deduplicated by timestamp,
+// newest first, trimmed to `limit`.
+const mergeRecent = (existing, incoming, limit = 20) => {
+  const byTimestamp = new Map();
+  [...existing, ...incoming].forEach((message) => byTimestamp.set(message.timestamp, message));
+  return [...byTimestamp.values()]
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, limit);
+};
+
 if (typeof module !== 'undefined') {
   module.exports = {
     EMOJI_PATTERN,
@@ -145,5 +157,6 @@ if (typeof module !== 'undefined') {
     findEmojiQuery,
     searchEmoji,
     completeEmoji,
+    mergeRecent,
   };
 }

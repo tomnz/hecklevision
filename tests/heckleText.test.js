@@ -164,3 +164,28 @@ describe('completeEmoji', () => {
     assert.deepEqual(completeEmoji('hello', 5, 'joy'), { text: 'hello', cursor: 5 });
   });
 });
+
+describe('mergeRecent', () => {
+  const { mergeRecent } = require('../static/heckleText.js');
+  const msg = (timestamp) => ({ author: 'tom', text: `m${timestamp}`, timestamp });
+
+  test('orders newest first', () => {
+    assert.deepEqual(mergeRecent([], [msg(1), msg(3), msg(2)]).map((m) => m.timestamp), [3, 2, 1]);
+  });
+
+  test('prepends new messages to existing ones', () => {
+    assert.deepEqual(mergeRecent([msg(2), msg(1)], [msg(3)]).map((m) => m.timestamp), [3, 2, 1]);
+  });
+
+  test('deduplicates by timestamp', () => {
+    assert.equal(mergeRecent([msg(2), msg(1)], [msg(2), msg(3)]).length, 3);
+  });
+
+  test('trims to the limit, keeping the newest', () => {
+    const many = Array.from({ length: 30 }, (_, i) => msg(i));
+    const recent = mergeRecent([], many, 20);
+    assert.equal(recent.length, 20);
+    assert.equal(recent[0].timestamp, 29);
+    assert.equal(recent[19].timestamp, 10);
+  });
+});

@@ -180,6 +180,64 @@ button:disabled {
   color: var(--error);
 }
 
+/* --- Recent heckles --- */
+
+#recent {
+  margin-top: 40px;
+}
+
+#recent h2 {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+#recentList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#recentList li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+#recentList li.new {
+  animation: recentFlash 1.5s ease-out;
+}
+
+@keyframes recentFlash {
+  from { border-color: var(--accent); }
+  to   { border-color: var(--border); }
+}
+
+.recentTime {
+  flex-shrink: 0;
+  font-size: 0.8em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.recentAuthor {
+  font-style: italic;
+}
+
+.recentText {
+  font-weight: bold;
+}
+
+.recentEmpty {
+  color: var(--muted);
+  font-style: italic;
+}
+
 footer {
   margin-top: 40px;
   padding-top: 16px;

@@ -46,12 +46,19 @@
             </div>
         </form>
 
+        <section id="recent" aria-labelledby="recentHeading">
+            <h2 id="recentHeading">Recent heckles</h2>
+            <ol id="recentList"></ol>
+            <p id="recentEmpty" class="recentEmpty">No heckles yet. Be the first!</p>
+        </section>
+
         <footer>
             <a href="/">Watch the stream</a> · <a href="/messages?history">Heckle history</a>
         </footer>
     </main>
     <script type="text/javascript" src="{{ url_for('static', filename='builtinEmojis.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='heckleText.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='poller.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='submit.js') }}"></script>
 </body>
 </html>

@@ -80,7 +80,7 @@ const checkMessageOverload = () => {
 const updateMessages = () => {
   const messagesEl = document.getElementById('messages');
 
-  fetchMessages(lastTimestamp).then((resp) => resp.json()).then((data) => {
+  return fetchMessages(lastTimestamp).then((resp) => resp.json()).then((data) => {
     data.forEach((message) => {
       if (message.timestamp > lastTimestamp) {
         lastTimestamp = message.timestamp;
@@ -126,10 +126,19 @@ const updateMessages = () => {
   }).finally(() => {
     suppressAnimations = false;
     checkMessageOverload();
-    // Schedule the next update
-    setTimeout(updateMessages, MESSAGE_POLL_MS);
   });
 };
+
+// The overlay feeds the stream, so it always polls. History is a page people leave
+// open in a tab, so it pauses while hidden and stops after a few hours.
+const HISTORY_LIFETIME_MS = 3 * 60 * 60 * 1000;
+const messagePoller = createPoller({
+  poll: updateMessages,
+  intervalMs: MESSAGE_POLL_MS,
+  pauseWhenHidden: historyMode,
+  maxLifetimeMs: historyMode ? HISTORY_LIFETIME_MS : null,
+  onExpire: () => showRefreshBanner('History stopped updating. Refresh to continue.'),
+});
 
 if (historyMode) {
   window.document.body.classList.add('blackBackground');
@@ -141,7 +150,7 @@ if (historyMode) {
 
 const start = async () => {
   customEmoji = await fetchEmoji().then((resp) => resp.json());
-  updateMessages();
+  messagePoller.start();
 };
 
 start();
