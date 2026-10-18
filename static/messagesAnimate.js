@@ -22,15 +22,22 @@
 
 const container = document.getElementById('animatedEmojis');
 
-const w = () => window.innerWidth;
-const h = () => window.innerHeight;
+// Cached rather than read per particle per frame. Reading window.innerWidth can
+// flush pending layout, and the step loop is writing styles continuously, so
+// reading it inside the loop risks a flush on every particle.
+let viewW = window.innerWidth;
+let viewH = window.innerHeight;
+window.addEventListener('resize', () => {
+  viewW = window.innerWidth;
+  viewH = window.innerHeight;
+});
 
 // vw and vh aren't interchangeable — 10vh of travel is a different distance on
 // screen than 10vw. Convert whenever an effect needs genuinely angular motion,
 // and mind the direction: these are inverses, and using the wrong one squashes
 // the motion by (w/h)² rather than leaving it alone.
-const vh2vw = (v) => v * h() / w();
-const vw2vh = (v) => v * w() / h();
+const vh2vw = (v) => v * viewH / viewW;
+const vw2vh = (v) => v * viewW / viewH;
 
 const rand = (min, variance) => min + Math.random() * variance;
 const randSign = () => (Math.random() < 0.5 ? -1 : 1);
@@ -57,7 +64,13 @@ const place = (p, x, y, { scale = 1, scaleY = null, rot = 0, opacity = 1 } = {})
   if (scaleY !== null) t += ` scale(${scale}, ${scaleY})`;
   else if (scale !== 1) t += ` scale(${scale})`;
   p.el.style.transform = t;
-  p.el.style.opacity = `${opacity}`;
+
+  // Most effects hold a constant opacity for most of a particle's life — only
+  // the fades change it — so this skips about two thirds of the writes.
+  if (p.appliedOpacity !== opacity) {
+    p.el.style.opacity = `${opacity}`;
+    p.appliedOpacity = opacity;
+  }
 };
 
 class Effect {
@@ -85,7 +98,10 @@ class Effect {
       el.style.display = 'none';
       container.appendChild(el);
 
-      const p = { el, i, age: 0, delay: this.particleDelay(i), alive: true, started: false };
+      const p = {
+        el, i, age: 0, delay: this.particleDelay(i), alive: true, started: false,
+        appliedOpacity: null, // forces the first write, see place()
+      };
       this.initParticle(p, i);
       this.particles.push(p);
     }
@@ -112,8 +128,10 @@ class Effect {
     this.stepShared(dt);
 
     let anyAlive = false;
-    this.particles.forEach((p) => {
-      if (!p.alive) return;
+    // A plain loop rather than forEach: this runs for every particle of every
+    // live effect on every frame, and the callback would be reallocated each time.
+    for (const p of this.particles) {
+      if (!p.alive) continue;
 
       // Still waiting to spawn — alive, but not yet moving or visible. Falls
       // through on the frame the delay runs out, so a particle timed to appear
@@ -122,7 +140,7 @@ class Effect {
         p.delay -= dt;
         if (p.delay > 0) {
           anyAlive = true;
-          return;
+          continue;
         }
       }
       if (!p.started) {
@@ -137,7 +155,7 @@ class Effect {
         p.alive = false;
         container.removeChild(p.el);
       }
-    });
+    }
 
     return anyAlive;
   }
@@ -193,7 +211,7 @@ class BounceEffect extends Effect {
 
     const size = rand(BOUNCE_SIZE_MIN, BOUNCE_SIZE_VAR);
     setSize(p, size);
-    p.bottom = 100.0 - (size * 100.0 / h());
+    p.bottom = 100.0 - (size * 100.0 / viewH);
   }
 
   stepParticle(p, dt) {

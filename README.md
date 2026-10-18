@@ -53,6 +53,8 @@ Message rendering, emoji parsing and autocomplete live in `static/heckleText.js`
 node --test
 ```
 
+The same run covers the animation engine: `tests/messagesAnimate.test.js` loads `static/messagesAnimate.js` into a `vm` context with a stub `document` and steps every effect to completion, checking invariants that should hold at any setting — nothing NaN, nothing outliving its effect, no elements left in the DOM, no motion reversing direction.
+
 The Flask side (`heckle()` validation and throttling, Slack text cleanup, endpoints) is tested with the standard library's `unittest`, in local mode:
 
 ```sh
