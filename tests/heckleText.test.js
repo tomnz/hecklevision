@@ -116,6 +116,27 @@ describe('stringToColor', () => {
     assert.match(stringToColor('tom'), /^hsl\(\d+, \d+%, \d+%\)$/);
   });
 
+  test('spreads common names evenly around the hue circle', () => {
+    const names = `tom alice bob sam alex chris jess kate mike dave sarah emma liam noah olivia ava mia ben
+      jack james john paul anna lucy amy matt dan nick josh ryan luke adam sophie grace chloe zoe ella ruby
+      jake sean max leo finn harry george oscar charlie will tim jim joe kim lee pat jen beth meg nat rob
+      rachel laura hannah megan lauren holly katie jo andy steve mark greg brian kevin jason eric scott
+      craig neil ian colin gary karen lisa mary helen sue jane fiona claire nicola ross hamish angus isla
+      mila eli theo ted ned`.split(/\s+/);
+    const buckets = Array(12).fill(0);
+    names.forEach((name) => {
+      buckets[Math.floor(Number(stringToColor(name).match(/hsl\((\d+)/)[1]) / 30)] += 1;
+    });
+    // ~8 per 30° band expected; a biased hash piles 20+ into one band
+    assert.ok(Math.max(...buckets) <= 15, `uneven hue spread: ${buckets}`);
+  });
+
+  test('keeps similar names apart', () => {
+    const hue = (name) => Number(stringToColor(name).match(/hsl\((\d+)/)[1]);
+    const gap = Math.abs(hue('tom') - hue('jane'));
+    assert.ok(Math.min(gap, 360 - gap) > 30);
+  });
+
   test('ignores case', () => {
     assert.equal(stringToColor('Tom'), stringToColor('tom'));
     assert.equal(stringToColor('TOM'), stringToColor('tom'));

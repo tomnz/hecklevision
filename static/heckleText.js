@@ -78,19 +78,31 @@ const renderMessage = (text, builtinEmoji = {}, customEmoji = {}) => {
 // character rather than two UTF-16 units
 const messageLength = (text) => [...text.replace(new RegExp(EMOJI_PATTERN.source, 'gi'), 'x'.repeat(EMOJI_LENGTH))].length;
 
+// 32-bit FNV-1a followed by the MurmurHash3 finaliser. The finaliser mixes every input
+// bit into every output bit, so similar names (same length, a letter apart) still land
+// far apart once reduced to a hue.
+const hashString = (str) => {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
+};
+
 // Case-insensitive, so "Tom" and "tom" get the same colour
 const stringToColor = (str) => {
-  str = str.toLowerCase();
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    hash |= 0; // keep 32-bit
-  }
+  const hash = hashString(str.toLowerCase());
 
-  const hue = ((hash % 360) + 360) % 360;
-
-  const sat = 65 + (Math.abs(hash) % 20);     // 65–85%
-  const light = 55 + (Math.abs(hash >> 3) % 15); // 55–70%
+  // Hue, saturation and lightness come from separate bits so they vary independently
+  const hue = hash % 360;
+  const sat = 65 + ((hash >>> 9) % 20); // 65–85%
+  const light = 55 + ((hash >>> 14) % 15); // 55–70%
 
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 };
