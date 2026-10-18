@@ -18,13 +18,17 @@ const renderAndAnimate = (text) => {
   const { html, emojis } = renderMessage(text, BUILTIN_EMOJIS, customEmoji);
 
   if (emojis.length > 0 && !suppressAnimations) {
-    // Pick one animation style for the entire message
-    const animation = animations[Math.floor(Math.random() * animations.length)];
-    emojis.forEach((emoji) => {
-      if (!emoji.name.startsWith('skin-tone-') && !/^\p{Emoji_Modifier}$/u.test(emoji.name)) {
-        animateEmoji(emoji.html, animation);
-      }
-    });
+    const animatable = emojis
+      .filter((emoji) => !emoji.name.startsWith('skin-tone-')
+        && !/^\p{Emoji_Modifier}$/u.test(emoji.name))
+      .map((emoji) => emoji.html);
+
+    // One animation style, and one effect, for the whole message — the effect
+    // sizes itself to the emoji it's handed and spreads them across its particles.
+    if (animatable.length > 0) {
+      const animation = animations[Math.floor(Math.random() * animations.length)];
+      animateEmojis(animatable, animation);
+    }
   }
 
   return html;

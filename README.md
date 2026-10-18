@@ -75,7 +75,7 @@ The Flask side (`heckle()` validation and throttling, Slack text cleanup, endpoi
 
 * `static/heckleText.js` — shared text rendering (emoji, escaping, autocomplete search); unit tested in `tests/`
 * `static/messages.js` — polling + rendering loop for the overlay
-* `static/messagesAnimate.js` — emoji animation engine
+* `static/messagesAnimate.js` — emoji animation engine. One `Effect` subclass per style, registered in the `animations` array at the bottom; a message hands its whole emoji list to one effect, which sizes itself to how many there are. To add a style, subclass `Effect`, implement `initParticle`/`stepParticle`, and add it to the array — the test page below picks it up automatically.
 * `static/submit.js` — submit page (emoji autocomplete, preview)
 * `static/player.js` — video.js init for the live HLS stream (same-origin `/live/*.m3u8`)
 * `static/*.css` — styling
