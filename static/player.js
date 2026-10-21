@@ -23,12 +23,14 @@ window.addEventListener('load', () => {
         bandwidth: 1128000,
         useBandwidthFromLocalStorage: true,
         overrideNative: !videojs.browser.IS_ANY_SAFARI,
-        // Live-edge tuning. Defaults: liveSyncDurationCount=3,
-        // liveMaxLatencyDurationCount=liveSyncDurationCount+1. Pairing with
-        // hls_fragment 1s + hls_playlist_length 12s in the server config,
-        // target live edge is now ~2s behind, with catchup kicking in at ~3s.
-        liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 3,
+        // Live-edge tuning. With hls_fragment 1s + hls_playlist_length 12s in
+        // the server config, playback targets ~4s behind live, which gives
+        // distant or Wi-Fi viewers a few seconds of buffer to ride out dips.
+        // Catchup only jumps forward once ~10s behind, so a stall rebuilds
+        // buffer instead of discarding it. Heckles are composited into the
+        // video, so this latency doesn't affect overlay sync.
+        liveSyncDurationCount: 4,
+        liveMaxLatencyDurationCount: 10,
       },
       nativeAudioTracks: !videojs.browser.IS_ANY_SAFARI,
       nativeVideoTracks: !videojs.browser.IS_ANY_SAFARI,
