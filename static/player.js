@@ -27,12 +27,12 @@ window.addEventListener('load', () => {
         // OBS keyframe, ~1s apart, and its 16s playlist lists ~16 of them
         // (hls_fragment / hls_playlist_length in hecklevision-server's
         // ansible/group_vars/all.yml; change these counts alongside them).
-        // Playback targets ~4s behind live, and catchup jumps forward only
+        // Playback targets ~3s behind live, and catchup jumps forward only
         // past ~10s, so a viewer on a shaky connection can fall back and
         // rebuild buffer without losing video. Both stay inside the playlist
         // window. Heckles are composited into the video, so this latency
         // doesn't affect overlay sync.
-        liveSyncDurationCount: 4,
+        liveSyncDurationCount: 3,
         liveMaxLatencyDurationCount: 10,
       },
       nativeAudioTracks: !videojs.browser.IS_ANY_SAFARI,
