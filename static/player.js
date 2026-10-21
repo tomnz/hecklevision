@@ -24,16 +24,16 @@ window.addEventListener('load', () => {
         useBandwidthFromLocalStorage: true,
         overrideNative: !videojs.browser.IS_ANY_SAFARI,
         // Live-edge tuning, in segments. The server closes a segment on each
-        // OBS keyframe, ~1s apart, and its 16s playlist lists ~16 of them
+        // OBS keyframe, ~1s apart, and its 18s playlist lists ~18 of them
         // (hls_fragment / hls_playlist_length in hecklevision-server's
         // ansible/group_vars/all.yml; change these counts alongside them).
         // Playback targets ~3s behind live, and catchup jumps forward only
-        // past ~10s, so a viewer on a shaky connection can fall back and
+        // past ~12s, so a viewer on a shaky connection can fall back and
         // rebuild buffer without losing video. Both stay inside the playlist
         // window. Heckles are composited into the video, so this latency
         // doesn't affect overlay sync.
         liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 10,
+        liveMaxLatencyDurationCount: 12,
       },
       nativeAudioTracks: !videojs.browser.IS_ANY_SAFARI,
       nativeVideoTracks: !videojs.browser.IS_ANY_SAFARI,
