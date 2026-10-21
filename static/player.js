@@ -45,7 +45,7 @@ window.addEventListener('load', () => {
 
   // Same-origin HLS URL — SWAG on the current host proxies /live/* to the
   // local nginx-rtmp container. Works for any hostname the page is served
-  // from (heckle.tom.kiwi, stream.tom.kiwi, etc.) without rebuilding.
+  // from, without rebuilding.
   const srcUrl = new URL('/live/movie.m3u8', window.location.origin);
 
   videojs(document.querySelector('#video'), options, function() {
