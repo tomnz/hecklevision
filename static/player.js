@@ -24,7 +24,9 @@ window.addEventListener('load', () => {
         useBandwidthFromLocalStorage: true,
         overrideNative: !videojs.browser.IS_ANY_SAFARI,
         // Live-edge tuning, in segments. The server closes a segment on each
-        // OBS keyframe, ~1s apart, and its 16s playlist lists ~16 of them.
+        // OBS keyframe, ~1s apart, and its 16s playlist lists ~16 of them
+        // (hls_fragment / hls_playlist_length in hecklevision-server's
+        // ansible/group_vars/all.yml; change these counts alongside them).
         // Playback targets ~4s behind live, and catchup jumps forward only
         // past ~10s, so a viewer on a shaky connection can fall back and
         // rebuild buffer without losing video. Both stay inside the playlist
